@@ -2592,6 +2592,15 @@ static ncStatus_t getDeviceOptionClass0(struct _devicePrivate_t *d,
         *(int *) data = d->throttle_happened;
         *dataLength = sizeof(int);
         break;
+    case NC_RO_DEVICE_PROFILE_DATA:
+        rc = getDeviceProfilingData(d);
+        if (rc) {
+            return rc;
+        }
+        *(uint8_t **)data = d->profilingBuffer;
+        *dataLength = d->receivedData;
+        break;
+
     case NC_RO_DEVICE_STATE:
         *(int *) data = d->state;
         *dataLength = sizeof(int);

@@ -133,6 +133,7 @@ typedef enum {
     NC_RO_DEVICE_HW_VERSION = 2015,             //returns HW Version, enum
     NC_RO_DEVICE_ID = 2016,                     // returns device id
     NC_RO_DEVICE_PLATFORM = 2017,               // returns device platform (MyriadX, Myriad2)
+    NC_RO_DEVICE_PROFILE_DATA = 2042,           // returns device platform (MyriadX, Myriad2)
 } ncDeviceOption_t;
 
 typedef enum {

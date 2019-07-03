@@ -347,6 +347,56 @@ void MyriadExecutor::getResult(GraphDesc &graphDesc, void *result_data, unsigned
 void MyriadExecutor::deallocateGraph(DevicePtr &device, GraphDesc &graphDesc) {
     std::lock_guard<std::mutex> lock(device_mutex);
 
+    int ncLogLevel = 0;
+    auto status = ncGlobalSetOption(NC_RW_LOG_LEVEL, &ncLogLevel, sizeof(ncLogLevel));
+    if (status != NC_OK) {
+        _log->warning("failed to set log level: %d with error: %s\n",
+            ncLogLevel,
+            ncStatusToStr(nullptr, status));
+    }
+    unsigned int dataLength = 0;
+
+    int throttleLevel = 0;
+    status = ncDeviceGetOption(device->_deviceHandle, NC_RO_DEVICE_THERMAL_THROTTLING_LEVEL, 
+        reinterpret_cast<void*>(&throttleLevel), &dataLength);
+    if (status != NC_OK) {
+        _log->warning("Failed to get thremal throttling level");
+    }
+    else
+    {
+        _log->info("Thermal throttling level: %d", throttleLevel);
+    }
+
+    float bufferPtr[256];
+    dataLength = 256;
+    status = ncDeviceGetOption(device->_deviceHandle, NC_RO_DEVICE_THERMAL_STATS,
+        reinterpret_cast<void*>(&bufferPtr), &dataLength);
+    if (status != NC_OK)
+    {
+        _log->warning("Failed to get thermal stats");
+    }
+    else
+    {
+        for (int i = 0; i < dataLength / sizeof(float); i++)
+        {
+            if (bufferPtr[i] == 0.0) break;
+
+            _log->info("\tthermal%d: %f", i, bufferPtr[i]);
+        }
+    }
+
+    //_log->info("Getting profiling data....");
+    //uint8_t *profBufferPtr;
+    //status = ncDeviceGetOption(device->_deviceHandle, NC_RO_DEVICE_PROFILE_DATA,
+    //    reinterpret_cast<void*>(&profBufferPtr), &dataLength);
+    //if (status != NC_OK) {
+    //    _log->warning("Failed to get profiling data");
+    //}
+    //else
+    //{
+    //    _log->info("Profiling data size: %d", dataLength);
+    //}
+
     if (graphDesc._inputFifoHandle != nullptr) {
         auto res = ncFifoDestroy(&graphDesc._inputFifoHandle);
         if (res != NC_OK)
