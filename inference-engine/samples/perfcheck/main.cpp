@@ -539,6 +539,45 @@ int main(int argc, char *argv[]) {
         doneFuture.wait();
 
         printFPS(num_requests, 10, time_points);
+
+        
+        std::map<std::string, InferenceEngine::InferenceEngineProfileInfo> aggregateProfile;
+        std::vector<std::string> execOrder(256);
+
+        for (auto &&request : requests) {
+            auto perfCounts = request.GetPerformanceCounts();
+            for (auto &&entry : perfCounts)
+            {
+                auto aggregateEntry = aggregateProfile.find(entry.first);
+                if (aggregateEntry == aggregateProfile.end())
+                {
+                    aggregateProfile[entry.first] = entry.second;
+                    execOrder[entry.second.execution_index] = entry.first;
+                    continue;
+                }
+
+                auto& info = entry.second;
+                auto& aggregateInfo = aggregateEntry->second;
+                aggregateInfo.realTime_uSec += info.realTime_uSec;
+                aggregateInfo.cpu_uSec += info.cpu_uSec;
+            }
+        }
+
+        for (auto &&key : execOrder)
+        {
+            if (key.empty()) break;
+            auto aggregateEntry = aggregateProfile.find(key);
+            if (aggregateEntry != aggregateProfile.end())
+            {
+                auto& info = aggregateEntry->second;
+                std::cout
+                    << std::setw(7) << std::right
+                    << info.realTime_uSec << " "
+                    << key << " "
+                    << info.layer_type << "/" << info.exec_type
+                    << std::endl;
+            }
+        }  
     } catch (const std::exception &error) {
         slog::err << error.what() << slog::endl;
         return EXIT_FAILURE;
